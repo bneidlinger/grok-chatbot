@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Grok</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            font-family: Arial, sans-serif;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        .chat-box {
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+            background: #f9f9f9;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+        }
+        .form-control {
+            border-radius: 0;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+        }
+        .btn-send {
+            border-radius: 0;
+            background: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+        }
+        .user-message {
+            text-align: right;
+            color: #007bff;
+        }
+        .bot-message {
+            text-align: left;
+            color: #333;
+        }
+        .typing {
+            font-style: italic;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <div class="chat-box" id="chat-box">
+            <p class="bot-message"><strong>Bot:</strong> Hello! How can I help you today?</p>
+        </div>
+        <div class="input-group">
+            <input type="text" id="user-input" class="form-control" placeholder="Type a message...">
+            <button id="send-btn" class="btn btn-send">Send</button>
+        </div>
+    </div>
+
+    <script>
+        var socket = io.connect("http://localhost:5000");
+        var chatBox = document.getElementById("chat-box");
+        var userInput = document.getElementById("user-input");
+
+        function sendMessage() {
+            var message = userInput.value.trim();
+            if (message === "") return;
+
+            $("#chat-box").append("<p class='user-message'><strong>You:</strong> " + message + "</p>");
+            userInput.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            socket.emit("message", message);
+        }
+
+        $("#send-btn").click(sendMessage);
+        $("#user-input").keypress(function(event) {
+            if (event.which === 13) {
+                sendMessage();
+            }
+        });
+
+        socket.on("response", function(data) {
+            if (data.type === "typing") {
+                $("#chat-box").append("<p id='typing-indicator' class='typing'><em>Bot is typing...</em></p>");
+            } else if (data.type === "message") {
+                $("#typing-indicator").remove(); // Remove the typing indicator
+                $("#chat-box").append("<p class='bot-message'><strong>Bot:</strong> " + data.text + "</p>");
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+        });
+    </script>
+
+</body>
+</html>
